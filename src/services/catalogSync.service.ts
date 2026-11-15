@@ -156,8 +156,8 @@ export const catalogSyncService = {
     `);
 
     const insertTimestampTagStmt = db.prepare(`
-      INSERT INTO timestamp_tags (id, video_id, tag_id, timestamp_sec, label, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO timestamp_tags (id, video_id, tag_id, timestamp_sec, label, thumbnail_file, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
     const tagIdByName = new Map<string, string>();
@@ -236,6 +236,9 @@ export const catalogSyncService = {
               Math.max(0, Number(ts.timestampSec.toFixed(2))),
               typeof ts.label === "string" && ts.label.trim()
                 ? ts.label.trim()
+                : null,
+              typeof ts.thumbnailFile === "string" && ts.thumbnailFile.trim()
+                ? ts.thumbnailFile.trim()
                 : null,
               typeof ts.createdAt === "string" ? ts.createdAt : now
             );

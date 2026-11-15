@@ -10,6 +10,7 @@ export interface TimestampTagDTO {
   tagName: string;
   timestampSec: number;
   label: string | null;
+  thumbnailUrl: string | null;
   createdAt: string;
 }
 
@@ -32,6 +33,7 @@ export interface TimestampSearchHit {
   timestampSec: number;
   tagName: string;
   label: string | null;
+  thumbnailUrl: string | null;
   video: {
     id: string;
     title: string;

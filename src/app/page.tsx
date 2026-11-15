@@ -1,11 +1,16 @@
-import { HeroSection } from "@/components/sections/HeroSection";
+import { TopModeNav } from "@/components/ui/TopModeNav";
 import { SearchVaultSection } from "@/components/sections/SearchVaultSection";
 
 export default function HomePage() {
   return (
-    <main>
-      <HeroSection />
-      <SearchVaultSection />
-    </main>
+    <div className="min-h-dvh bg-void">
+      <TopModeNav
+        activeMode="use"
+        subtitle="RECHERCHE DE DANSES & FIGURES PAR TIMECODE"
+      />
+      <main>
+        <SearchVaultSection />
+      </main>
+    </div>
   );
 }

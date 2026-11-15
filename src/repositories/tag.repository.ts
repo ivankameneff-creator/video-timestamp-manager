@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { db } from "./db";
 import { normalizeTagName } from "@/lib/timecode";
+import { toThumbnailUrl } from "@/services/thumbnailStorage.service";
 import type { TagDTO, TimestampTagDTO } from "@/types/cinema.types";
 
 export const tagRepository = {
@@ -42,21 +43,24 @@ export const tagRepository = {
   },
 
   addTimestampTag(params: {
+    id?: string;
     videoId: string;
     rawTagName: string;
     timestampSec: number;
     label?: string | null;
+    thumbnailFile?: string | null;
   }): TimestampTagDTO {
     const tag = this.getOrCreateTag(params.rawTagName);
-    const id = randomUUID();
+    const id = params.id ?? randomUUID();
     const now = new Date().toISOString();
     const timestampSec = Math.max(0, Number(params.timestampSec.toFixed(2)));
     const label = params.label?.trim() || null;
+    const thumbnailFile = params.thumbnailFile ?? null;
 
     db.prepare(
-      `INSERT INTO timestamp_tags (id, video_id, tag_id, timestamp_sec, label, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(id, params.videoId, tag.id, timestampSec, label, now);
+      `INSERT INTO timestamp_tags (id, video_id, tag_id, timestamp_sec, label, thumbnail_file, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, params.videoId, tag.id, timestampSec, label, thumbnailFile, now);
 
     return {
       id,
@@ -65,12 +69,42 @@ export const tagRepository = {
       tagName: tag.name,
       timestampSec,
       label,
+      thumbnailUrl: toThumbnailUrl(thumbnailFile),
       createdAt: now,
     };
   },
 
-  removeTimestampTag(id: string): void {
+  updateTimestampThumbnail(
+    timestampTagId: string,
+    videoId: string,
+    thumbnailFile: string
+  ): void {
+    db.prepare(
+      "UPDATE timestamp_tags SET thumbnail_file = ? WHERE id = ? AND video_id = ?"
+    ).run(thumbnailFile, timestampTagId, videoId);
+  },
+
+  /**
+   * Supprime le timestamp et retourne son thumbnail_file uniquement
+   * si aucun autre timestamp ne partage ce fichier image.
+   */
+  removeTimestampTag(id: string): string | null {
+    const existing = db
+      .prepare("SELECT thumbnail_file FROM timestamp_tags WHERE id = ?")
+      .get(id) as { thumbnail_file: string | null } | undefined;
+
     db.prepare("DELETE FROM timestamp_tags WHERE id = ?").run(id);
+
+    const thumb = existing?.thumbnail_file ?? null;
+    if (!thumb) return null;
+
+    const remaining = db
+      .prepare(
+        "SELECT COUNT(*) AS cnt FROM timestamp_tags WHERE thumbnail_file = ?"
+      )
+      .get(thumb) as { cnt: number };
+
+    return remaining.cnt === 0 ? thumb : null;
   },
 
   listAllTagsWithCounts(): { name: string; count: number }[] {

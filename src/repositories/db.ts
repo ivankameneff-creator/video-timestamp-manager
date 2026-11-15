@@ -26,6 +26,15 @@ function ensureVideoColumns(db: DatabaseSync): void {
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_videos_content_hash ON videos(content_hash);"
   );
+
+  const tsColumns = db
+    .prepare("PRAGMA table_info(timestamp_tags)")
+    .all() as unknown as { name: string }[];
+  const existingTsNames = new Set(tsColumns.map((c) => c.name));
+
+  if (!existingTsNames.has("thumbnail_file")) {
+    db.exec("ALTER TABLE timestamp_tags ADD COLUMN thumbnail_file TEXT;");
+  }
 }
 
 function createDatabase(): DatabaseSync {
@@ -87,6 +96,7 @@ function createDatabase(): DatabaseSync {
       tag_id TEXT NOT NULL,
       timestamp_sec REAL NOT NULL,
       label TEXT,
+      thumbnail_file TEXT,
       created_at TEXT NOT NULL,
       FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
       FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE

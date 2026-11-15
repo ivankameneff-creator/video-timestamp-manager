@@ -11,10 +11,12 @@ import {
   Tag,
   X,
 } from "lucide-react";
+import { formatTimecode } from "@/lib/timecode";
 import { useSectionReveal } from "@/hooks/useSectionReveal";
 import { CinematicPlayer } from "@/components/ui/CinematicPlayer";
 import { TimecodeBadge } from "@/components/ui/TimecodeBadge";
 import { TagChip } from "@/components/ui/TagChip";
+import { TimestampThumbnail } from "@/components/ui/TimestampThumbnail";
 import type {
   SearchResponseDTO,
   TimestampSearchHit,
@@ -49,7 +51,6 @@ export function SearchVaultSection() {
       const json = (await res.json()) as SearchResponseDTO;
       setData(json);
 
-      // Sélection initiale automatique de la première vidéo disponible sans auto-lecture forcée
       setActiveVideo((prev) => {
         if (prev) {
           const refreshed = json.videoHits.find((v) => v.id === prev.id);
@@ -99,39 +100,41 @@ export function SearchVaultSection() {
     <section
       id="search"
       ref={sectionRef}
-      aria-label="Recherche de vidéos par mot-clé et lecture au timestamp"
-      className="camera-shot border-t border-white/10 bg-void px-6 py-16 md:px-12 md:py-20"
+      aria-label="Recherche de vidéos et figures par mot-clé et timestamp"
+      className="px-6 py-8 md:px-12 md:py-10"
     >
-      <div className="mx-auto max-w-7xl space-y-10">
-        {/* EN-TÊTE DU PLAN 02 */}
+      <div className="mx-auto max-w-7xl space-y-7">
+        {/* EN-TÊTE COMPACT SANS GRAND TEXTE D'ACCUEIL */}
         <div
           data-reveal
-          className="flex flex-wrap items-end justify-between gap-6 border-b border-white/10 pb-8"
+          className="flex flex-wrap items-center justify-between gap-4"
         >
           <div>
-            <p className="font-mono text-xs tracking-[0.28em] text-amber-cue uppercase">
-              PLAN 02 — MODE UTILISATION // SALLE DE PROJECTION
+            <h1 className="font-display text-xl font-bold tracking-wide text-ink uppercase sm:text-2xl">
+              Répertoire des Danses &amp; Figures Horodatées
+            </h1>
+            <p className="font-serif text-sm italic text-muted">
+              Retrouvez une figure, un rythme ou un pas à la seconde exacte.
             </p>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight uppercase sm:text-5xl">
-              Recherche par Mot-Clé &amp; Timecode
-            </h2>
           </div>
 
-          <div className="flex items-center gap-4 font-mono text-xs text-muted">
-            <span>{data.timestampHits.length} séquence(s) horodatée(s)</span>
+          <div className="flex items-center gap-3 rounded-full border border-line bg-surface px-4 py-1.5 font-mono text-xs text-muted shadow-2xs">
+            <span className="font-semibold text-crimson">
+              {data.timestampHits.length} figure(s)
+            </span>
             <span>•</span>
             <span>{data.videoHits.length} vidéo(s)</span>
           </div>
         </div>
 
-        {/* BARRE DE RECHERCHE CINÉMATIQUE + NUAGE DE TAGS RAPIDES */}
-        <div data-reveal className="space-y-4">
+        {/* BARRE DE RECHERCHE LUMINEUSE + NUAGE DE MOTS-CLÉS */}
+        <div data-reveal className="space-y-3.5">
           <div className="relative">
             <label htmlFor="keyword-search" className="sr-only">
-              Rechercher un mot-clé dans les vidéos et timestamps
+              Rechercher un mot-clé dans les danses et timestamps
             </label>
             <Search
-              className="pointer-events-none absolute top-1/2 left-5 h-5 w-5 -translate-y-1/2 text-amber-cue"
+              className="pointer-events-none absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-crimson"
               aria-hidden="true"
             />
             <input
@@ -139,15 +142,15 @@ export function SearchVaultSection() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Saisissez un mot-clé (ex: interview, cascade, drone, refrain, tutoriel...)"
-              className="w-full rounded-2xl border border-white/15 bg-surface py-4 pr-12 pl-14 text-base text-ink placeholder:text-muted/70 transition-colors focus:border-amber-cue focus:outline-none"
+              placeholder="Rechercher une danse, une région ou un pas (ex: hora, sârba, brâul, învârtita, călușarii, pas croisé...)"
+              className="w-full rounded-2xl border border-line bg-surface py-3.5 pr-12 pl-12 text-sm text-ink shadow-xs placeholder:text-muted/75 transition-colors focus:border-crimson focus:outline-none sm:text-base"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery("")}
                 aria-label="Effacer la recherche"
-                className="absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer rounded-full p-1.5 text-muted hover:bg-white/10 hover:text-ink"
+                className="absolute top-1/2 right-3.5 -translate-y-1/2 cursor-pointer rounded-full p-1.5 text-muted hover:bg-elevated hover:text-ink"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -156,9 +159,12 @@ export function SearchVaultSection() {
 
           {data.availableTags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="mr-1 inline-flex items-center gap-1.5 font-mono text-xs text-muted">
-                <Sparkles className="h-3.5 w-3.5 text-amber-cue" aria-hidden="true" />
-                Mots-clés indexés :
+              <span className="mr-1 inline-flex items-center gap-1.5 font-mono text-xs font-medium text-muted">
+                <Sparkles
+                  className="h-3.5 w-3.5 text-crimson"
+                  aria-hidden="true"
+                />
+                Tags disponibles :
               </span>
               {data.availableTags.slice(0, 18).map((tag) => (
                 <TagChip
@@ -177,51 +183,50 @@ export function SearchVaultSection() {
           )}
         </div>
 
-        {/* GRILLE PRINCIPALE : RÉSULTATS À GAUCHE + MONITEUR DE LECTURE À DROITE */}
+        {/* GRILLE PRINCIPALE : STORYBOARD À GAUCHE + MONITEUR À DROITE */}
         <div
           data-reveal
           className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start"
         >
           {/* COLONNE GAUCHE : SÉQUENCES HORODATÉES & VIDÉOS */}
-          <div className="space-y-8 lg:col-span-5">
-            {/* État vide : aucune vidéo configurée */}
-            {!loading &&
-              data.videoHits.length === 0 &&
-              !query.trim() && (
-                <div className="rounded-2xl border border-dashed border-white/15 bg-surface/70 p-8 text-center">
-                  <FolderCog
-                    className="mx-auto h-9 w-9 text-amber-cue"
-                    aria-hidden="true"
-                  />
-                  <h3 className="mt-4 font-display text-lg font-bold uppercase">
-                    Aucune vidéo indexée
-                  </h3>
-                  <p className="mt-2 text-sm text-muted">
-                    Configurez d&apos;abord le répertoire racine contenant votre
-                    arborescence de vidéos dans le Mode Admin.
-                  </p>
-                  <Link
-                    href="/admin"
-                    className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-full bg-amber-cue px-5 py-2.5 text-xs font-semibold text-void transition-transform hover:scale-[1.02]"
-                  >
-                    <span>Ouvrir le Mode Admin</span>
-                  </Link>
-                </div>
-              )}
+          <div className="space-y-7 lg:col-span-5">
+            {!loading && data.videoHits.length === 0 && !query.trim() && (
+              <div className="rounded-2xl border border-dashed border-line-strong bg-surface p-8 text-center shadow-xs">
+                <FolderCog
+                  className="mx-auto h-9 w-9 text-crimson"
+                  aria-hidden="true"
+                />
+                <h2 className="mt-3 font-display text-base font-bold text-ink uppercase">
+                  Aucune vidéo indexée
+                </h2>
+                <p className="mt-1.5 text-sm text-muted">
+                  Configurez le dossier contenant vos vidéos de danse dans
+                  l&apos;onglet Répertoire Admin.
+                </p>
+                <Link
+                  href="/admin"
+                  className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-full bg-crimson px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-crimson-hover"
+                >
+                  <span>Ouvrir Répertoire Admin</span>
+                </Link>
+              </div>
+            )}
 
-            {/* 1. Séquences exactes trouvées par Timestamp */}
+            {/* 1. Figures & Séquences au Timestamp */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.2em] text-amber-cue uppercase">
+                <h2 className="inline-flex items-center gap-2 font-display text-xs font-bold tracking-[0.14em] text-crimson uppercase">
                   <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Séquences au Timestamp ({data.timestampHits.length})</span>
-                </h3>
+                  <span>
+                    Figures au Timestamp ({data.timestampHits.length})
+                  </span>
+                </h2>
                 {data.videoHits.length > 0 && (
                   <Link
                     href="/configure"
-                    className="font-mono text-xs text-muted underline-offset-4 hover:text-amber-cue hover:underline"
+                    className="font-mono text-xs font-medium text-cobalt underline-offset-4 hover:underline"
                   >
-                    + Ajouter des tags
+                    + Annoter un pas
                   </Link>
                 )}
               </div>
@@ -231,20 +236,20 @@ export function SearchVaultSection() {
                   {[1, 2, 3].map((n) => (
                     <div
                       key={n}
-                      className="h-20 animate-pulse rounded-xl border border-white/5 bg-surface"
+                      className="h-24 animate-pulse rounded-xl border border-line bg-surface"
                     />
                   ))}
                 </div>
               ) : data.timestampHits.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-surface/50 p-5 text-sm text-muted">
+                <div className="rounded-xl border border-line bg-surface p-5 text-sm text-muted shadow-2xs">
                   {query.trim()
                     ? `Aucun timestamp tagué ne correspond à « ${query} ».`
-                    : "Aucun timestamp n'a encore été tagué. Utilisez le Mode Configure pour annoter des moments précis."}
+                    : "Aucun timestamp n'a encore été tagué. Utilisez « Annoter Figures » pour marquer vos pas de danse."}
                 </div>
               ) : (
                 <ul
                   data-lenis-prevent
-                  className="max-h-[420px] space-y-2.5 overflow-y-auto pr-1"
+                  className="max-h-[480px] space-y-2.5 overflow-y-auto pr-1"
                 >
                   {data.timestampHits.map((hit) => {
                     const isCurrent = activeCueId === hit.id;
@@ -260,37 +265,43 @@ export function SearchVaultSection() {
                           }}
                           role="button"
                           tabIndex={0}
-                          className={`group flex w-full cursor-pointer items-start justify-between gap-3 rounded-xl border p-3.5 text-left transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-amber-cue focus-visible:outline-none ${
+                          className={`group flex w-full cursor-pointer items-center gap-3.5 rounded-xl border p-3 text-left transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-crimson focus-visible:outline-none ${
                             isCurrent
-                              ? "border-amber-cue bg-amber-cue/10"
-                              : "border-white/10 bg-surface hover:border-amber-cue/45 hover:bg-elevated"
+                              ? "border-crimson bg-crimson/8 shadow-xs"
+                              : "border-line bg-surface hover:border-crimson/50 hover:bg-elevated/55"
                           }`}
                         >
-                          <div className="min-w-0 space-y-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full bg-white/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-ink">
+                          <TimestampThumbnail
+                            src={hit.thumbnailUrl}
+                            alt={`#${hit.tagName} dans ${hit.video.title} à ${formatTimecode(hit.timestampSec)}`}
+                            size="md"
+                          />
+
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="rounded-full border border-line bg-elevated px-2.5 py-0.5 font-mono text-xs font-semibold text-ink">
                                 #{hit.tagName}
                               </span>
-                              <span className="truncate text-sm font-medium text-ink/90">
-                                {hit.video.title}
-                              </span>
+                              <TimecodeBadge
+                                seconds={hit.timestampSec}
+                                active={isCurrent}
+                                onClick={() => handlePlayTimestampHit(hit)}
+                              />
                             </div>
 
+                            <p className="truncate text-sm font-semibold text-ink">
+                              {hit.video.title}
+                            </p>
+
                             {hit.label && (
-                              <p className="text-xs text-muted">{hit.label}</p>
+                              <p className="truncate text-xs text-muted">
+                                {hit.label}
+                              </p>
                             )}
 
-                            <p className="truncate font-mono text-[11px] text-muted/75">
-                              Dossier : {hit.video.folderPath}
+                            <p className="truncate font-mono text-[10px] text-muted/85">
+                              {hit.video.folderPath}
                             </p>
-                          </div>
-
-                          <div className="shrink-0">
-                            <TimecodeBadge
-                              seconds={hit.timestampSec}
-                              active={isCurrent}
-                              onClick={() => handlePlayTimestampHit(hit)}
-                            />
                           </div>
                         </div>
                       </li>
@@ -300,13 +311,15 @@ export function SearchVaultSection() {
               )}
             </div>
 
-            {/* 2. Vidéos correspondantes (Tags globaux & Titres) */}
+            {/* 2. Vidéos correspondantes */}
             {data.videoHits.length > 0 && (
               <div className="space-y-3">
-                <h3 className="inline-flex items-center gap-2 font-mono text-xs tracking-[0.2em] text-muted uppercase">
-                  <Film className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Vidéos de la bibliothèque ({data.videoHits.length})</span>
-                </h3>
+                <h2 className="inline-flex items-center gap-2 font-display text-xs font-bold tracking-[0.14em] text-ink/80 uppercase">
+                  <Film className="h-3.5 w-3.5 text-crimson" aria-hidden="true" />
+                  <span>
+                    Vidéos de la bibliothèque ({data.videoHits.length})
+                  </span>
+                </h2>
 
                 <ul
                   data-lenis-prevent
@@ -319,22 +332,32 @@ export function SearchVaultSection() {
                         key={video.id}
                         className={`rounded-xl border p-3.5 transition-colors ${
                           isSelected
-                            ? "border-white/30 bg-elevated"
-                            : "border-white/10 bg-surface hover:border-white/25"
+                            ? "border-crimson/55 bg-elevated/70 shadow-2xs"
+                            : "border-line bg-surface hover:border-line-strong"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center justify-between gap-3">
                           <button
                             type="button"
                             onClick={() => handlePlayVideoAt(video, 0)}
-                            className="min-w-0 flex-1 cursor-pointer text-left focus-visible:outline-none"
+                            className="group flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left focus-visible:outline-none"
                           >
-                            <p className="truncate text-sm font-semibold text-ink">
-                              {video.title}
-                            </p>
-                            <p className="truncate font-mono text-[11px] text-muted">
-                              {video.folderPath}
-                            </p>
+                            {video.posterUrl && (
+                              <TimestampThumbnail
+                                src={video.posterUrl}
+                                alt={video.title}
+                                size="sm"
+                                showPlayOverlay={false}
+                              />
+                            )}
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-ink">
+                                {video.title}
+                              </p>
+                              <p className="truncate font-mono text-[11px] text-muted">
+                                {video.folderPath}
+                              </p>
+                            </div>
                           </button>
 
                           <TimecodeBadge
@@ -363,8 +386,8 @@ export function SearchVaultSection() {
             )}
           </div>
 
-          {/* COLONNE DROITE STICKY : LECTEUR CINÉMATIQUE & MARQUEURS DE LA VIDÉO ACTIVE */}
-          <div className="space-y-5 lg:sticky lg:top-8 lg:col-span-7">
+          {/* COLONNE DROITE STICKY : LECTEUR & STORYBOARD DE LA VIDÉO ACTIVE */}
+          <div className="space-y-5 lg:sticky lg:top-24 lg:col-span-7">
             <CinematicPlayer
               video={activeVideo}
               seekRequest={seekRequest}
@@ -372,34 +395,35 @@ export function SearchVaultSection() {
             />
 
             {activeVideo && (
-              <div className="rounded-2xl border border-white/10 bg-surface p-5 space-y-4">
+              <div className="space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-2 font-mono text-xs text-muted uppercase">
-                    <Tag className="h-3.5 w-3.5 text-amber-cue" aria-hidden="true" />
-                    Index temporel de « {activeVideo.title} »
+                  <span className="inline-flex items-center gap-2 font-display text-xs font-bold tracking-[0.1em] text-ink uppercase">
+                    <Tag
+                      className="h-3.5 w-3.5 text-crimson"
+                      aria-hidden="true"
+                    />
+                    Figures enregistrées dans « {activeVideo.title} »
                   </span>
                   <Link
                     href={`/configure?videoId=${activeVideo.id}`}
-                    className="font-mono text-xs text-amber-cue hover:underline"
+                    className="font-mono text-xs font-semibold text-crimson hover:underline"
                   >
-                    Éditer les tags de cette vidéo →
+                    Annoter cette danse →
                   </Link>
                 </div>
 
                 {activeVideo.timestampTags.length === 0 ? (
                   <p className="text-xs text-muted">
-                    Aucun marqueur temporel enregistré sur cette vidéo.
+                    Aucune figure horodatée sur cette vidéo pour le moment.
                   </p>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {activeVideo.timestampTags.map((ts) => (
-                      <div
-                        key={ts.id}
-                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-void/70 px-2.5 py-1.5"
-                      >
-                        <TimecodeBadge
-                          seconds={ts.timestampSec}
-                          active={activeCueId === ts.id}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+                    {activeVideo.timestampTags.map((ts) => {
+                      const isCueActive = activeCueId === ts.id;
+                      return (
+                        <button
+                          key={ts.id}
+                          type="button"
                           onClick={() =>
                             handlePlayVideoAt(
                               activeVideo,
@@ -407,17 +431,33 @@ export function SearchVaultSection() {
                               ts.id
                             )
                           }
-                        />
-                        <span className="text-xs font-medium text-ink">
-                          #{ts.tagName}
-                        </span>
-                        {ts.label && (
-                          <span className="text-xs text-muted">
-                            — {ts.label}
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                          className={`group flex cursor-pointer flex-col overflow-hidden rounded-xl border p-2 text-left transition-colors focus-visible:ring-2 focus-visible:ring-crimson focus-visible:outline-none ${
+                            isCueActive
+                              ? "border-crimson bg-crimson/8 shadow-2xs"
+                              : "border-line bg-elevated/45 hover:border-crimson/45 hover:bg-surface"
+                          }`}
+                        >
+                          <TimestampThumbnail
+                            src={ts.thumbnailUrl}
+                            alt={`#${ts.tagName} à ${formatTimecode(ts.timestampSec)}`}
+                            size="lg"
+                          />
+                          <div className="mt-2 flex w-full items-center justify-between gap-2 px-0.5">
+                            <span className="truncate font-mono text-xs font-semibold text-ink">
+                              #{ts.tagName}
+                            </span>
+                            <span className="shrink-0 font-mono text-[11px] font-semibold text-crimson">
+                              {formatTimecode(ts.timestampSec)}
+                            </span>
+                          </div>
+                          {ts.label && (
+                            <p className="mt-0.5 line-clamp-1 px-0.5 text-[11px] text-muted">
+                              {ts.label}
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

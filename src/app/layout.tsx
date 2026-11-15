@@ -3,9 +3,9 @@ import { SmoothScrollProvider } from "@/providers/SmoothScrollProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CHRONOFRAME — Indexation Vidéo & Recherche par Timecode",
+  title: "JOCURI & TIMECODES — Répertoire Vidéo de Danse Roumaine",
   description:
-    "Plateforme cinématique de recherche vidéo instantanée par mots-clés et timestamps précis.",
+    "Indexation vidéo par mots-clés et timestamps précis pour retrouver instantanément chaque danse, figure et pas.",
 };
 
 export default function RootLayout({
@@ -23,13 +23,13 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-void text-ink antialiased selection:bg-amber-cue selection:text-void">
-        {/* Superposition de grain photographique 35mm */}
-        <div className="film-grain" aria-hidden="true" />
+      <body className="bg-void text-ink antialiased selection:bg-crimson selection:text-white">
+        {/* Trame subtile de toile de lin tissée (blouse traditionnelle Ia) */}
+        <div className="linen-weave" aria-hidden="true" />
 
         <SmoothScrollProvider>{children}</SmoothScrollProvider>
       </body>

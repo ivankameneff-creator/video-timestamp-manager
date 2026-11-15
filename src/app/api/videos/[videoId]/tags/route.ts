@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import { tagRepository } from "@/repositories/tag.repository";
 import { videoRepository } from "@/repositories/video.repository";
 import { catalogSyncService } from "@/services/catalogSync.service";
+import { thumbnailStorageService } from "@/services/thumbnailStorage.service";
 
 export const runtime = "nodejs";
 
@@ -24,6 +26,7 @@ export async function POST(
       tagName?: string;
       timestampSec?: number;
       label?: string;
+      thumbnailDataUrl?: string | null;
     };
 
     if (!body.tagName?.trim()) {
@@ -43,6 +46,16 @@ export async function POST(
       for (const t of rawTags) {
         tagRepository.addGlobalTagToVideo(videoId, t);
       }
+
+      if (body.thumbnailDataUrl && !video.posterUrl) {
+        const posterFile = thumbnailStorageService.saveDataUrlThumbnail(
+          body.thumbnailDataUrl,
+          `poster_${videoId}`
+        );
+        if (posterFile) {
+          videoRepository.updatePosterIfEmpty(videoId, posterFile);
+        }
+      }
     } else if (body.mode === "timestamp") {
       const sec = Number(body.timestampSec ?? 0);
       if (!Number.isFinite(sec) || sec < 0) {
@@ -51,13 +64,28 @@ export async function POST(
           { status: 400 }
         );
       }
+
       for (const t of rawTags) {
+        const tsId = randomUUID();
+        const savedThumbFile = body.thumbnailDataUrl
+          ? thumbnailStorageService.saveDataUrlThumbnail(
+              body.thumbnailDataUrl,
+              `ts_${tsId}`
+            )
+          : null;
+
         tagRepository.addTimestampTag({
+          id: tsId,
           videoId,
           rawTagName: t,
           timestampSec: sec,
           label: body.label,
+          thumbnailFile: savedThumbFile,
         });
+
+        if (savedThumbFile && !video.posterUrl) {
+          videoRepository.updatePosterIfEmpty(videoId, savedThumbFile);
+        }
       }
     } else {
       return NextResponse.json(
@@ -83,20 +111,53 @@ export async function PATCH(
 ) {
   try {
     const { videoId } = await context.params;
-    const body = (await request.json()) as { durationSec?: number };
+    const body = (await request.json()) as {
+      durationSec?: number;
+      timestampThumbnails?: {
+        timestampTagId: string;
+        thumbnailDataUrl: string;
+      }[];
+    };
+
+    let mutated = false;
+
     if (
       typeof body.durationSec === "number" &&
       Number.isFinite(body.durationSec) &&
       body.durationSec > 0
     ) {
       videoRepository.updateDuration(videoId, body.durationSec);
+      mutated = true;
+    }
+
+    if (Array.isArray(body.timestampThumbnails)) {
+      for (const item of body.timestampThumbnails) {
+        if (!item?.timestampTagId || !item?.thumbnailDataUrl) continue;
+        const savedFile = thumbnailStorageService.saveDataUrlThumbnail(
+          item.thumbnailDataUrl,
+          `ts_${item.timestampTagId}`
+        );
+        if (savedFile) {
+          tagRepository.updateTimestampThumbnail(
+            item.timestampTagId,
+            videoId,
+            savedFile
+          );
+          videoRepository.updatePosterIfEmpty(videoId, savedFile);
+          mutated = true;
+        }
+      }
+    }
+
+    if (mutated) {
       catalogSyncService.exportCatalogToRoot();
     }
+
     const updatedVideo = videoRepository.findById(videoId);
     return NextResponse.json({ video: updatedVideo });
   } catch {
     return NextResponse.json(
-      { error: "Mise à jour de durée impossible." },
+      { error: "Mise à jour impossible." },
       { status: 400 }
     );
   }
@@ -122,7 +183,10 @@ export async function DELETE(
     if (mode === "global") {
       tagRepository.removeGlobalTagFromVideo(videoId, targetId);
     } else if (mode === "timestamp") {
-      tagRepository.removeTimestampTag(targetId);
+      const orphanThumb = tagRepository.removeTimestampTag(targetId);
+      if (orphanThumb) {
+        thumbnailStorageService.deleteThumbnailFile(orphanThumb);
+      }
     }
 
     catalogSyncService.exportCatalogToRoot();

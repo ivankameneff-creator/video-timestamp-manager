@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { db } from "./db";
+import { toThumbnailUrl } from "@/services/thumbnailStorage.service";
 import type { TagDTO, TimestampTagDTO, VideoDTO } from "@/types/cinema.types";
 
 interface VideoRow {
@@ -36,6 +37,7 @@ export interface PortableCatalogVideoEntry {
     tagName: string;
     timestampSec: number;
     label: string | null;
+    thumbnailFile: string | null;
     createdAt: string;
   }[];
 }
@@ -65,6 +67,7 @@ interface TimestampTagRow {
   tag_name: string;
   timestamp_sec: number;
   label: string | null;
+  thumbnail_file: string | null;
   created_at: string;
 }
 
@@ -83,7 +86,7 @@ function hydrateVideos(videoRows: VideoRow[]): VideoDTO[] {
   const allTimestampTags = db
     .prepare(
       `SELECT tt.id, tt.video_id, tt.tag_id, t.name AS tag_name,
-              tt.timestamp_sec, tt.label, tt.created_at
+              tt.timestamp_sec, tt.label, tt.thumbnail_file, tt.created_at
        FROM timestamp_tags tt
        JOIN tags t ON t.id = tt.tag_id
        ORDER BY tt.timestamp_sec ASC`
@@ -107,6 +110,7 @@ function hydrateVideos(videoRows: VideoRow[]): VideoDTO[] {
       tagName: row.tag_name,
       timestampSec: row.timestamp_sec,
       label: row.label,
+      thumbnailUrl: toThumbnailUrl(row.thumbnail_file),
       createdAt: row.created_at,
     });
     tsMap.set(row.video_id, list);
@@ -121,7 +125,7 @@ function hydrateVideos(videoRows: VideoRow[]): VideoDTO[] {
     fileSizeBytes: v.file_size_bytes,
     contentHash: v.content_hash,
     isMissing: Boolean(v.is_missing),
-    posterUrl: v.poster_url,
+    posterUrl: toThumbnailUrl(v.poster_url) ?? v.poster_url,
     globalTags: globalMap.get(v.id) ?? [],
     timestampTags: tsMap.get(v.id) ?? [],
   }));
@@ -208,6 +212,13 @@ export const videoRepository = {
     db.prepare(
       "UPDATE videos SET duration_sec = ?, updated_at = ? WHERE id = ?"
     ).run(durationSec, now, id);
+  },
+
+  updatePosterIfEmpty(id: string, posterFilename: string): void {
+    const now = new Date().toISOString();
+    db.prepare(
+      "UPDATE videos SET poster_url = ?, updated_at = ? WHERE id = ? AND (poster_url IS NULL OR poster_url = '')"
+    ).run(posterFilename, now, id);
   },
 
   insertNewVideo(data: {
@@ -353,6 +364,12 @@ export const videoRepository = {
 
     const hydrated = hydrateVideos(videoRows);
     const metaById = new Map(videoRows.map((r) => [r.id, r]));
+    const tsThumbRows = db
+      .prepare("SELECT id, thumbnail_file FROM timestamp_tags")
+      .all() as unknown as { id: string; thumbnail_file: string | null }[];
+    const thumbFileByTsId = new Map(
+      tsThumbRows.map((r) => [r.id, r.thumbnail_file])
+    );
 
     return hydrated.map((v) => {
       const raw = metaById.get(v.id);
@@ -367,7 +384,7 @@ export const videoRepository = {
         mtimeMs: raw?.mtime_ms ?? null,
         contentHash: v.contentHash,
         isMissing: v.isMissing,
-        posterUrl: v.posterUrl,
+        posterUrl: raw?.poster_url ?? null,
         createdAt: raw?.created_at ?? fallbackNow,
         updatedAt: raw?.updated_at ?? fallbackNow,
         globalTags: v.globalTags.map((g) => g.name),
@@ -376,6 +393,7 @@ export const videoRepository = {
           tagName: ts.tagName,
           timestampSec: ts.timestampSec,
           label: ts.label,
+          thumbnailFile: thumbFileByTsId.get(ts.id) ?? null,
           createdAt: ts.createdAt,
         })),
       };

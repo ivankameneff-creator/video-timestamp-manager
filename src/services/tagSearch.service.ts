@@ -34,6 +34,7 @@ export const tagSearchService = {
             timestampSec: ts.timestampSec,
             tagName: ts.tagName,
             label: ts.label,
+            thumbnailUrl: ts.thumbnailUrl,
             video: {
               id: video.id,
               title: video.title,
@@ -94,6 +95,7 @@ export const tagSearchService = {
             timestampSec: ts.timestampSec,
             tagName: ts.tagName,
             label: ts.label,
+            thumbnailUrl: ts.thumbnailUrl,
             video: {
               id: video.id,
               title: video.title,

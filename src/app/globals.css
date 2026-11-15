@@ -1,27 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Syne", "Segoe UI", sans-serif;
+  --font-display: "Cinzel", "Cormorant Garamond", Georgia, serif;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
 
-  --color-void: #0a0a0a;
-  --color-surface: #121214;
-  --color-elevated: #1a1a1f;
-  --color-ink: #f4f3ef;
-  --color-muted: #9a9893;
-  --color-amber-cue: #e5a93c;
-  --color-rec: #e11d48;
+  /* Palette claire "Blouse Traditionnelle Roumaine (Ia)" */
+  --color-void: #faf6ee;
+  --color-surface: #ffffff;
+  --color-elevated: #f2ebe0;
+  --color-line: #e2d7c5;
+  --color-line-strong: #c5b49a;
+  --color-ink: #1e1614;
+  --color-muted: #685850;
+  --color-crimson: #b81d24;
+  --color-crimson-hover: #96161c;
+  --color-cobalt: #1d4e89;
+  --color-ochre: #9e670c;
+  --color-stage: #14100f;
 }
 
 :root {
-  color-scheme: dark;
-  --bg-void: #0a0a0a;
-  --bg-surface: #121214;
-  --fg-primary: #f4f3ef;
-  --fg-muted: #9a9893;
-  --accent-amber: #e5a93c;
-  --accent-rec: #e11d48;
+  color-scheme: light;
+  --bg-void: #faf6ee;
+  --fg-primary: #1e1614;
 }
 
 html {
@@ -32,7 +35,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Configuration recommandée pour Lenis Smooth Scroll */
+/* Configuration Lenis Smooth Scroll */
 html.lenis,
 html.lenis body {
   height: auto;
@@ -50,46 +53,45 @@ html.lenis body {
   overflow: hidden;
 }
 
-/* Plan de caméra cinématique plein écran */
-.camera-shot {
-  position: relative;
-  min-height: 100dvh;
-  width: 100%;
-  overflow: clip;
-}
-
-/* Grain pellicule 35mm en superposition SVG GPU-safe */
-.film-grain {
+/* Trame subtile de toile de lin traditionnelle (Ia Românească) */
+.linen-weave {
   position: fixed;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
+  inset: 0;
   pointer-events: none;
-  z-index: 9999;
-  opacity: 0.042;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  will-change: transform;
-  animation: grainShift 8s steps(10) infinite;
+  z-index: 50;
+  opacity: 0.32;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(140, 112, 82, 0.04) 0px,
+      rgba(140, 112, 82, 0.04) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(140, 112, 82, 0.04) 0px,
+      rgba(140, 112, 82, 0.04) 1px,
+      transparent 1px,
+      transparent 4px
+    );
 }
 
-@keyframes grainShift {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  20% { transform: translate3d(-3%, 2%, 0); }
-  40% { transform: translate3d(2%, -4%, 0); }
-  60% { transform: translate3d(-4%, -2%, 0); }
-  80% { transform: translate3d(3%, 3%, 0); }
+/* Filet décoratif tricolore roumain discret (Bleu de Voroneț • Or • Carmin) */
+.tricolor-thread {
+  background: linear-gradient(
+    90deg,
+    #1d4e89 0%,
+    #1d4e89 33.3%,
+    #d99b26 33.3%,
+    #d99b26 66.6%,
+    #b81d24 66.6%,
+    #b81d24 100%
+  );
 }
 
 /* Respect strict de prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  .film-grain {
-    animation: none;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
   *,
   *::before,
   *::after {

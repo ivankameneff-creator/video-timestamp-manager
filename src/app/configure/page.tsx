@@ -10,7 +10,10 @@ export default async function ConfigurePage({
 
   return (
     <div className="min-h-dvh bg-void">
-      <TopModeNav activeMode="configure" subtitle="MODE CONFIGURE" />
+      <TopModeNav
+        activeMode="configure"
+        subtitle="ANNOTATION DES DANSES & PAS HORODATÉS"
+      />
       <main>
         <TaggingStudioSection initialVideoId={videoId} />
       </main>
